@@ -1,0 +1,5 @@
+-- ============================================
+-- DRIVER DISTRIBUTION DATABASE
+-- File : 01_schema.sql
+-- Tujuan : Membuat struktur database
+-- ============================================
