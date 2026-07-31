@@ -61,12 +61,14 @@ def create_pengiriman(
             rute,
             tanggal_keberangkatan
         )
-        VALUES (%s, %s, %s, CURRENT_DATE);
+        VALUES (%s, %s, %s, CURRENT_DATE)
+        RETURNING id_pengiriman;
     """, (id_driver, pilih_kendaraan, rute))
+    id_pengiriman = cursor.fetchone()[0]
 
     cursor.close()
 
-
+    return id_pengiriman
 
 def update_status_driver(connection, id_driver, status):
     cursor = connection.cursor()
@@ -78,7 +80,7 @@ def update_status_driver(connection, id_driver, status):
     """, (status,id_driver))
 
     cursor.close()
-
+#get max urutan for all driver's status
 def get_max_urutan(connection):
     cursor = connection.cursor()
 
@@ -91,7 +93,7 @@ def get_max_urutan(connection):
 
     return max_urutan
 
-def update_urutan_driver(connection, id_driver, urutan_baru):
+def update_urutan_driver(connection,  urutan_baru, id_driver):
     cursor = connection.cursor()
 
     cursor.execute("""
@@ -126,6 +128,16 @@ def geser_antrian_driver(connection):
 
     cursor.close()
 
+def change_shipment_status(connection, status, id_pengiriman):
+    cursor = connection.cursor()
+
+    cursor.execute("""
+    UPDATE pengiriman
+    SET status = %s
+    WHERE id_pengiriman = %s;
+    """, (status, id_pengiriman))
+
+    cursor.close()
 
 #orchestrator
 def dispatch_shipment(
@@ -134,19 +146,19 @@ def dispatch_shipment(
     pilih_kendaraan,
     rute,
     urutan_driver
-    
-    ):
+):
 
     try:
-        create_pengiriman(
+        id_pengiriman = create_pengiriman(
             connection,
             id_driver,
             pilih_kendaraan,
             rute
             )
+        change_shipment_status(connection, "ON_PROGRESS", id_pengiriman),
         update_status_driver(connection, id_driver, "LUAR_KOTA")
         max_urutan = get_max_urutan(connection)
-        update_urutan_driver(connection, id_driver, max_urutan + 1)
+        update_urutan_driver(connection, max_urutan + 1, id_driver)
         keluarkan_urutan_driver_sementara(connection, urutan_driver)
         geser_antrian_driver(connection)
 
@@ -157,4 +169,98 @@ def dispatch_shipment(
         connection.rollback()
 
         raise
+
+#return_shipment
+#mencari pengiriman yang statusnya masih ON PROGRESS
+
+def get_pengiriman_on_progress(connection):
+    cursor = connection.cursor()
+
+    cursor.execute("""
+    SELECT 
+        id_pengiriman,
+        nama AS nama_driver,
+        rute,
+        tanggal_keberangkatan
+    FROM pengiriman
+    JOIN driver
+    ON pengiriman.id_driver = driver.id_driver
+    WHERE pengiriman.status = 'ON_PROGRESS'
+    ORDER BY id_pengiriman;
+    """)
+
+    shipment_on_progress = cursor.fetchall()
+
+    cursor.close()
+
+    return shipment_on_progress
+
+#cari pengiriman berdasarkan id_pengiriman
+def get_shipment_by_id(connection, id_pengiriman):
+    cursor = connection.cursor()
+
+    cursor.execute("""
+    SELECT *
+    FROM pengiriman
+    WHERE id_pengiriman = %s;
+    """, (id_pengiriman,))
+
+    shipment_by_id = cursor.fetchone()
+
+    cursor.close()
+
+    return shipment_by_id
+
+def finish_shipment(connection, id_pengiriman):
+    cursor = connection.cursor()
+
+    cursor.execute("""
+    UPDATE pengiriman
+    SET 
+        status = 'DONE',
+        tanggal_kembali = CURRENT_DATE
+    WHERE id_pengiriman = %s;
+    """, (id_pengiriman,))
+
+    cursor.close()
+
+#get max urutan driver for status = SIAP
+def get_max_urutan_siap(connection,id_driver):
+    cursor = connection.cursor()
+
+    cursor.execute("""
+    SELECT COALESCE(MAX(urutan), 0) AS urutan_terbesar_siap
+    FROM driver
+    WHERE status_driver = 'SIAP'
+    AND id_driver <> %s;
+    """, (id_driver,))
+
+    max_urutan_siap = cursor.fetchone()[0]
+
+    cursor.close()
+
+    return max_urutan_siap
+
+
+
+def return_shipment(
+    connection,
+    id_pengiriman
+
+):
+
+    try :
+        finish_shipment(connection, id_pengiriman)
+        shipment = get_shipment_by_id(connection, id_pengiriman)
+        id_driver = shipment[1]
+        update_status_driver(connection, id_driver, "SIAP")
+        max_urutan_siap = get_max_urutan_siap(connection, id_driver)
+        update_urutan_driver(connection, max_urutan_siap + 1, id_driver)
+
+        connection.commit()
+
+    except Exception:
     
+        connection.rollback()
+    
+        raise

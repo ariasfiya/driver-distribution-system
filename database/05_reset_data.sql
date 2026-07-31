@@ -13,3 +13,12 @@ SET urutan = -urutan;
 -- Kembalikan urutan sesuai id_driver
 UPDATE driver
 SET urutan = id_driver;
+
+-- kembalikan status pengiriman dan tgl kembali
+UPDATE pengiriman
+SET 
+	status = 'ON_PROGRESS',
+	tanggal_kembali = NULL
+WHERE 
+	status = 'DONE'
+AND tanggal_kembali IS NOT NULL;
