@@ -1,4 +1,5 @@
 import psycopg
+from psycopg.rows import dict_row
 
 def connect_db():
     connection = psycopg.connect(
@@ -39,7 +40,8 @@ def get_active_vehicles(connection):
             kapasitas_ton
         FROM kendaraan
         WHERE aktif = TRUE
-        ORDER BY id_kendaraan    
+        AND status_kendaraan = 'SIAP'
+        ORDER BY id_kendaraan;
     """)
     vehicles = cursor.fetchall()
     cursor.close()
@@ -139,6 +141,18 @@ def change_shipment_status(connection, status, id_pengiriman):
 
     cursor.close()
 
+#update vehicles status
+def update_vehicle_status(connection, status, id_kendaraan):
+    cursor = connection.cursor()
+
+    cursor.execute("""
+    UPDATE kendaraan
+    SET status_kendaraan = %s
+    WHERE id_kendaraan = %s;
+    """, (status, id_kendaraan))
+
+    cursor.close()
+
 #orchestrator
 def dispatch_shipment(
     connection,
@@ -155,6 +169,7 @@ def dispatch_shipment(
             pilih_kendaraan,
             rute
             )
+        update_vehicle_status(connection, "DIPAKAI", pilih_kendaraan)
         change_shipment_status(connection, "ON_PROGRESS", id_pengiriman),
         update_status_driver(connection, id_driver, "LUAR_KOTA")
         max_urutan = get_max_urutan(connection)
@@ -197,7 +212,7 @@ def get_pengiriman_on_progress(connection):
 
 #cari pengiriman berdasarkan id_pengiriman
 def get_shipment_by_id(connection, id_pengiriman):
-    cursor = connection.cursor()
+    cursor = connection.cursor(row_factory=dict_row)
 
     cursor.execute("""
     SELECT *
@@ -250,14 +265,18 @@ def return_shipment(
 ):
 
     try :
-        finish_shipment(connection, id_pengiriman)
         shipment = get_shipment_by_id(connection, id_pengiriman)
-        id_driver = shipment[1]
-        update_status_driver(connection, id_driver, "SIAP")
-        max_urutan_siap = get_max_urutan_siap(connection, id_driver)
-        update_urutan_driver(connection, max_urutan_siap + 1, id_driver)
 
-        connection.commit()
+        if shipment["status"] != "ON_PROGRESS":
+            raise ValueError("X!! Shipment already completed.")
+        else:
+            finish_shipment(connection, id_pengiriman)
+            update_vehicle_status(connection, "SIAP", shipment["id_kendaraan"])
+            update_status_driver(connection, shipment["id_driver"], "SIAP")
+            max_urutan_siap = get_max_urutan_siap(connection, shipment["id_driver"])
+            update_urutan_driver(connection, max_urutan_siap + 1, shipment["id_driver"])
+
+            connection.commit()
 
     except Exception:
     

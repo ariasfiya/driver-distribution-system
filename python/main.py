@@ -54,8 +54,27 @@ if menu == "1":
             for id_kendaraan, nopol, jenis, kapasitas in vehicles:
                 print(f"{id_kendaraan}. {nopol} ({jenis}, {kapasitas} ton)")
 
-            #input atau pilih kendaraan oleh admin
-            pilih_kendaraan = int(input("\nPilih ID kendaraan: "))
+            while True:
+                try: 
+
+                    #input atau pilih kendaraan oleh admin
+                    pilih_kendaraan = int(input("\nPilih ID kendaraan: "))
+
+                    ## Validate user input against available options
+                    truck = next (
+                        (v for v in vehicles if v[0]==pilih_kendaraan),
+                        None
+                    )
+
+                    if truck is None:
+                        print("Truck not found")
+                        continue
+                    
+                    break
+
+                except ValueError:
+                    print("Input must be e nummber")
+
             print(f"ID kendaraan yang dipilih: {pilih_kendaraan}")
 
             #Input rute
@@ -69,8 +88,8 @@ if menu == "1":
                 rute,
                 urutan_driver
             )
-
             print ("pengiriman berhasil disimpan")
+
 
 elif menu == "2":
     # ==========================================
@@ -90,22 +109,40 @@ elif menu == "2":
             
             print(f"{id_pengiriman}. {nama_driver}. {rute}. {tanggal_keberangkatan} ")
 
-        pilih_pengiriman = int(input("\nPilih ID pengiriman: "))
-        shipment = get_shipment_by_id(connection, pilih_pengiriman)
+        while True:
+            try : 
+                pilih_pengiriman = int(input("\nPilih ID pengiriman: "))
 
-        if shipment is None:
-            print("Shipment not found")
-        else:
-            print("Oke")
+                shipment = get_shipment_by_id(connection, pilih_pengiriman)
 
+                if shipment is None:
+                    print("Shipment not found")
+                    continue
+
+                break
+            
+            except ValueError:
+                print("Input must be e nummber")
+
+        print("Oke")
+
+        try:
             return_shipment(
                 connection,
                 pilih_pengiriman
             )
 
-            print(f"Shipment #{id_pengiriman} to {rute} has been completed.")
+            print(f"Shipment #{pilih_pengiriman} to {shipment["rute"]} has been completed.")
+
+        except ValueError as e:
+            print(e)
+
+        except Exception as e:
+            print(f"Unexpected error: {e}")
 
             
+
+         
 
 
 elif menu == "3":
