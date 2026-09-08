@@ -1,8 +1,10 @@
 from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 from database import (
     connect_db,
+    get_drivers,
     get_active_vehicles,
     get_first_driver,
     dispatch_shipment,
@@ -11,6 +13,19 @@ from database import (
 )
 
 app = FastAPI()
+
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,            # Mengizinkan frontend
+    allow_credentials=True,
+    allow_methods=["*"],              # Mengizinkan semua method (GET, POST, PUT, DELETE)
+    allow_headers=["*"],              # Mengizinkan semua header
+)
 
 class CreateShipmentRequest(BaseModel):
     pilih_kendaraan : int
@@ -27,7 +42,7 @@ def create_shipment(request: CreateShipmentRequest):
             request.rute
         )
         return{
-            "message": "Shipment created succesfully"
+            "message": "Shipment created successfully"
         }
 
     except ValueError as error:
@@ -46,16 +61,6 @@ def home():
         "message": "Driver Distribuiton"
     }
 
-@app.get("/vehicles")
-def get_vehicles():
-    connection = connect_db()
-
-    try: 
-        vehicles = get_active_vehicles(connection)
-        return vehicles
-
-    finally:
-        connection.close()
 
 @app.get("/driver/first")
 def driver_first():
@@ -108,7 +113,7 @@ def return_shipment_endpoint(request: ReturnShipmentRequest):
         )
 
         return {
-            "massage":"Shipment has been completed"
+            "message":"Shipment has been completed"
         }
 
     except ValueError as error:
@@ -116,6 +121,18 @@ def return_shipment_endpoint(request: ReturnShipmentRequest):
             status_code=400,
             detail=str(error)
         )
+
+    finally:
+        connection.close()
+
+@app.get("/drivers")
+def get_all_drivers():
+
+    connection = connect_db()
+
+    try:
+        all_drivers = get_drivers(connection)
+        return all_drivers
 
     finally:
         connection.close()

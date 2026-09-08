@@ -11,8 +11,20 @@ def connect_db():
     )
     return connection
 
+def get_drivers(connection):
+    query = """
+        SELECT *
+        FROM driver
+        ORDER BY urutan;
+    """
+    with connection.cursor(row_factory=dict_row) as cursor:
+        cursor.execute(query)
+        drivers = cursor.fetchall()
+
+        return drivers
+
 def get_first_driver(connection):
-    cursor = connection.cursor()
+    cursor = connection.cursor(row_factory=dict_row)
 
     cursor.execute("""
         SELECT
@@ -30,22 +42,43 @@ def get_first_driver(connection):
     return driver
 
 def get_active_vehicles(connection):
-    cursor = connection.cursor()
+    query = """
+        SELECT
+            id_kendaraan,
+            nomer_polisi,
+            jenis,
+            kapasitas_ton,
+            status_kendaraan
+        FROM kendaraan
+        WHERE aktif = TRUE
+        AND status_kendaraan = 'SIAP'
+        ORDER BY id_kendaraan;
+    """
 
-    cursor.execute("""
+    with connection.cursor(row_factory=dict_row) as cursor:
+        cursor.execute(query)
+        vehicles = cursor.fetchall()
+
+        return vehicles
+
+def get_vehicle_for_dispatch(connection, pilih_kendaraan):
+    query = """
         SELECT
             id_kendaraan,
             nomer_polisi,
             jenis,
             kapasitas_ton
         FROM kendaraan
-        WHERE aktif = TRUE
-        AND status_kendaraan = 'SIAP'
-        ORDER BY id_kendaraan;
-    """)
-    vehicles = cursor.fetchall()
-    cursor.close()
-    return vehicles
+        WHERE id_kendaraan = %s
+        AND aktif = TRUE
+        AND status_kendaraan = 'SIAP';
+    """
+
+    with connection.cursor(row_factory=dict_row) as cursor:
+        cursor.execute(query, (pilih_kendaraan,))
+        truck = cursor.fetchone()
+
+    return truck
 
 #function buat kiriman
 def create_pengiriman(
@@ -153,28 +186,35 @@ def update_vehicle_status(connection, status, id_kendaraan):
 
     cursor.close()
 
-#orchestrator
+#orchestrator for make shipment
 def dispatch_shipment(
     connection,
-    id_driver,
     pilih_kendaraan,
-    rute,
-    urutan_driver
+    rute
 ):
+    driver = get_first_driver(connection)
+
+    if driver is None:
+        raise ValueError("No available drivers.")
+
+    vehicles = get_vehicle_for_dispatch(connection, pilih_kendaraan)
+
+    if not vehicles:
+        raise ValueError("No available vehicles")
 
     try:
         id_pengiriman = create_pengiriman(
             connection,
-            id_driver,
+            driver["id_driver"],
             pilih_kendaraan,
             rute
             )
         update_vehicle_status(connection, "DIPAKAI", pilih_kendaraan)
-        change_shipment_status(connection, "ON_PROGRESS", id_pengiriman),
-        update_status_driver(connection, id_driver, "LUAR_KOTA")
+        change_shipment_status(connection, "ON_PROGRESS", id_pengiriman)
+        update_status_driver(connection, driver["id_driver"], "LUAR_KOTA")
         max_urutan = get_max_urutan(connection)
-        update_urutan_driver(connection, max_urutan + 1, id_driver)
-        keluarkan_urutan_driver_sementara(connection, urutan_driver)
+        update_urutan_driver(connection, max_urutan + 1, driver["id_driver"])
+        keluarkan_urutan_driver_sementara(connection, driver["urutan"])
         geser_antrian_driver(connection)
 
         connection.commit()
@@ -189,24 +229,25 @@ def dispatch_shipment(
 #mencari pengiriman yang statusnya masih ON PROGRESS
 
 def get_pengiriman_on_progress(connection):
-    cursor = connection.cursor()
-
-    cursor.execute("""
+    query = """
     SELECT 
-        id_pengiriman,
-        nama AS nama_driver,
-        rute,
-        tanggal_keberangkatan
-    FROM pengiriman
-    JOIN driver
-    ON pengiriman.id_driver = driver.id_driver
-    WHERE pengiriman.status = 'ON_PROGRESS'
-    ORDER BY id_pengiriman;
-    """)
+        p.id_pengiriman,
+        d.nama AS nama_driver,
+        k.nomer_polisi,
+        p.rute,
+        p.tanggal_keberangkatan
+    FROM pengiriman p
+    JOIN driver d
+        ON p.id_driver = d.id_driver
+    JOIN kendaraan k
+        ON p.id_kendaraan=k.id_kendaraan
+    WHERE p.status = 'ON_PROGRESS'
+    ORDER BY p.id_pengiriman;
+    """
 
-    shipment_on_progress = cursor.fetchall()
-
-    cursor.close()
+    with connection.cursor(row_factory=dict_row) as cursor:
+        cursor.execute(query)
+        shipment_on_progress = cursor.fetchall()
 
     return shipment_on_progress
 
@@ -261,14 +302,17 @@ def get_max_urutan_siap(connection,id_driver):
 def return_shipment(
     connection,
     id_pengiriman
-
 ):
 
     try :
         shipment = get_shipment_by_id(connection, id_pengiriman)
 
+        if shipment is None:
+            raise ValueError("Shipment not found.")
+
         if shipment["status"] != "ON_PROGRESS":
             raise ValueError("X!! Shipment already completed.")
+        
         else:
             finish_shipment(connection, id_pengiriman)
             update_vehicle_status(connection, "SIAP", shipment["id_kendaraan"])
@@ -282,4 +326,38 @@ def return_shipment(
     
         connection.rollback()
     
+        raise
+
+
+    #reset data
+def reset_system_data(connection):
+    try:
+        with connection.cursor() as cursor:
+
+            # Hapus shipment yang masih berjalan
+            cursor.execute("""
+                DELETE FROM pengiriman
+                WHERE status = 'ON_PROGRESS';
+            """)
+
+            # Reset driver
+            cursor.execute("""
+                UPDATE driver
+                SET
+                    status_driver = 'SIAP',
+                    urutan = id_driver;
+            """)
+
+            # Reset kendaraan
+            cursor.execute("""
+                UPDATE kendaraan
+                SET
+                    aktif = TRUE,
+                    status_kendaraan = 'SIAP';
+            """)
+
+        connection.commit()
+
+    except Exception:
+        connection.rollback()
         raise

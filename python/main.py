@@ -5,7 +5,8 @@ from database import (
     dispatch_shipment,
     get_pengiriman_on_progress,
     get_shipment_by_id,
-    return_shipment
+    return_shipment,
+    reset_system_data
 )
 
 print("=== DRIVER DISTRIBUTION SYSTEM ===")
@@ -25,7 +26,8 @@ print("=" * 30)
 
 print("1. Create Shipment")
 print("2. Return Shipment")
-print("3. Exit")
+print("3. reset")
+print("4. Exit")
 
 menu = input("\nSelect menu: ")
 
@@ -141,11 +143,22 @@ elif menu == "2":
             print(f"Unexpected error: {e}")
 
             
-
-         
-
-
 elif menu == "3":
+    def reset_data(connection):
+        connection = connect_db()
+
+        try:
+            reset_system_data(connection)
+            print("System data has been reset.")
+
+        finally:
+            connection.close()
+
+    reset_data(connection)
+
+
+
+elif menu == "4":
     print("Goodbye")
 
 else:
