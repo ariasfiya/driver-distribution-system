@@ -1,7 +1,6 @@
 from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-
 from database import (
     connect_db,
     get_drivers,
@@ -10,6 +9,12 @@ from database import (
     dispatch_shipment,
     get_pengiriman_on_progress,
     return_shipment
+)
+from driver import (
+    add_driver,
+    edit_urutan,
+    update_driver_status_out,
+    update_driver_status_in
 )
 
 app = FastAPI()
@@ -133,6 +138,98 @@ def get_all_drivers():
     try:
         all_drivers = get_drivers(connection)
         return all_drivers
+
+    finally:
+        connection.close()
+
+# Tambahkan driver
+class AddNewDriverRequest(BaseModel):
+    nama : str
+
+@app.post("/add_driver")
+def add_new_driver(request: AddNewDriverRequest):
+
+    connection = connect_db()
+
+    try:
+        add_driver(connection,request.nama)
+        return{
+            "message": "Add Driver successfully"
+        }
+
+    finally:
+        connection.close()
+
+# endpoint untuk edit urutan driver
+class EditUrutanDriverRequest(BaseModel):
+    urutan_semula : int
+    urutan_edit : int
+    id_driver : int
+
+@app.post("/edit_urutan_driver")
+def edit_urutan_driver(request: EditUrutanDriverRequest):
+
+    connection = connect_db()
+
+    try:
+        edit_urutan(
+            connection,
+            request.urutan_semula,
+            request.urutan_edit,
+            request.id_driver
+        )
+        return{
+            "message": "Driver order updated successfully"
+        }
+
+    finally:
+        connection.close()
+
+# endpoin edit status driver out
+class EditStatusDriverOut(BaseModel):
+    urutan : int
+    status : str
+    id_driver : int
+
+@app.post("/edit_status_driver_out")
+def edit_status_driver_out(request: EditStatusDriverOut):
+
+    connection = connect_db()
+
+    try:
+        update_driver_status_out(
+            connection,
+            request.urutan,
+            request.status,
+            request.id_driver
+        )
+        return{
+            "message": "Driver status updated successfully"
+        }
+
+    finally:
+        connection.close()
+
+# endpoin edit status driver in
+class EditStatusDriverIn(BaseModel):
+    status : str
+    id_driver : int
+
+@app.post("/edit_status_driver_in")
+def edit_status_driver_in(request: EditStatusDriverIn):
+
+    connection = connect_db()
+
+    try:
+        update_driver_status_in(
+            connection,
+            request.id_driver,
+            request.status
+        )
+
+        return{
+            "message": "Driver status updated successfully"
+        }
 
     finally:
         connection.close()

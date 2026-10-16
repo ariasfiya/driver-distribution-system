@@ -115,18 +115,41 @@ def update_status_driver(connection, id_driver, status):
     """, (status,id_driver))
 
     cursor.close()
+
 #get max urutan for all driver's status
+#jika nilai urutan max=NULL maka nilainya ubah jadi 0
+#menemukan urutan driver positif
 def get_max_urutan(connection):
     cursor = connection.cursor()
 
     cursor.execute("""
         SELECT COALESCE(MAX(urutan), 0) AS urutan_terbesar
-        FROM driver
+        FROM driver;
     """)
     max_urutan = cursor.fetchone()[0]
     cursor.close()
 
     return max_urutan
+
+#get min urutan negatif
+#untuk menemukan urutan terkecil negatif
+#untuk mengeluarkan driver dari urutan siap (sedang bertugas atau tidak siap kirim)
+def get_min_urutan(connection):
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT COALESCE(MIN(urutan),0) AS urutan_terkecil
+        FROM driver;
+    """)
+    min_urutan = cursor.fetchone()[0]
+    cursor.close()
+
+    if min_urutan == 1:
+        min_urutan = 0
+
+        return min_urutan
+
+    return min_urutan
 
 def update_urutan_driver(connection,  urutan_baru, id_driver):
     cursor = connection.cursor()
@@ -139,27 +162,18 @@ def update_urutan_driver(connection,  urutan_baru, id_driver):
 
     cursor.close()
 
-def keluarkan_urutan_driver_sementara(connection, urutan_driver):
-    cursor = connection.cursor()
 
-    cursor.execute("""
-    UPDATE driver
-    SET urutan = -urutan
-    WHERE status_driver = 'SIAP'
-    AND urutan > %s;
-    """, (urutan_driver,))
 
-    cursor.close()
-
-def geser_antrian_driver(connection):
+# menggeser antrian driver
+def geser_antrian_driver(connection, urutan):
     cursor = connection.cursor()
 
     cursor.execute("""
     UPDATE driver
     SET urutan = ABS(urutan) - 1
-    WHERE status_driver = 'SIAP' 
-    AND urutan < 0 ;
-    """)
+    WHERE status_driver = 'SIAP'
+    AND urutan >= %s;
+    """, (urutan,))
 
     cursor.close()
 
@@ -212,10 +226,10 @@ def dispatch_shipment(
         update_vehicle_status(connection, "DIPAKAI", pilih_kendaraan)
         change_shipment_status(connection, "ON_PROGRESS", id_pengiriman)
         update_status_driver(connection, driver["id_driver"], "LUAR_KOTA")
-        max_urutan = get_max_urutan(connection)
-        update_urutan_driver(connection, max_urutan + 1, driver["id_driver"])
-        keluarkan_urutan_driver_sementara(connection, driver["urutan"])
-        geser_antrian_driver(connection)
+        min_urutan = get_min_urutan(connection)
+        update_urutan_driver(connection, min_urutan - 1, driver["id_driver"])
+        urutan = 2
+        geser_antrian_driver(connection, urutan)
 
         connection.commit()
 
@@ -235,7 +249,8 @@ def get_pengiriman_on_progress(connection):
         d.nama AS nama_driver,
         k.nomer_polisi,
         p.rute,
-        p.tanggal_keberangkatan
+        p.tanggal_keberangkatan,
+        p.status
     FROM pengiriman p
     JOIN driver d
         ON p.id_driver = d.id_driver
@@ -361,3 +376,16 @@ def reset_system_data(connection):
     except Exception:
         connection.rollback()
         raise
+
+
+# Function untuk menambahkan driver baru
+def add_driver(connection, nama):
+    cursor = connection.cursor()
+
+    cursor.execute("""
+    INSERT INTO driver (nama)
+    VALUES
+    %s
+    """, (nama,))
+
+    cursor.close()

@@ -1,9 +1,10 @@
-import {useEffect, useState} from 'react'
+import {useState} from 'react'
 
 function CreateShipment({ 
     vehicles,
     firstDriver,
     getVehicles,
+    getDrivers,
     getFirstDriver,
     getActiveShipment
 }) {
@@ -42,8 +43,13 @@ function CreateShipment({
         .then(result => {
             console.log("Response dari FasAPI:",result)
             setMessage(result.message)
+
+            setTimeout(() => {
+                setMessage("")
+            }, 3000);
             
             getVehicles()
+            getDrivers()
             getFirstDriver()
             getActiveShipment()
             setRute("")
@@ -53,37 +59,42 @@ function CreateShipment({
 
 
     return (
-        <div>
-            <h3>CREATE SHIPMENT</h3>
+        <div className='create-shipment'>
+            <div className='create-shoment-header'>
+                <h3>Create Shipment</h3>
+                <p>Buat Pengiriman Baru</p>
+            </div>
 
-            <p>Driver 1 : {firstDriver?.nama}</p>
+            <div className='create-shipment-form'>
+                <p>Driver 1 : {firstDriver?.nama}</p>
 
-            <select onChange={pilihKendaraan}>
-                <option>Pilih Kendaraan</option>
+                <select onChange={pilihKendaraan}>
+                    <option>Pilih Kendaraan</option>
 
-                {vehicles.map((vehicle) => (
-                    <option key={vehicle.id_kendaraan} value={vehicle.id_kendaraan}>
-                        {vehicle.nomer_polisi} - {vehicle.jenis} - {vehicle.kapasitas_ton} ton
-                    </option>
-                ))}
+                    {vehicles.map((vehicle) => (
+                        <option key={vehicle.id_kendaraan} value={vehicle.id_kendaraan}>
+                            {vehicle.nomer_polisi} - {vehicle.jenis} - {vehicle.kapasitas_ton} ton
+                        </option>
+                    ))}
 
-            </select>
+                </select>
 
-            <p>Kendaraan dipilih: {selectedVehicle.nomer_polisi}</p>
+                <p>Kendaraan dipilih: {selectedVehicle.nomer_polisi}</p>
 
-            <input
-                type ="text"
-                placeholder="Masukkan rute"
-                value={rute}
-                onChange={ubahRute}
-            />
-            <p>Rute: {rute}</p>
+                <input
+                    type ="text"
+                    placeholder="Masukkan rute"
+                    value={rute}
+                    onChange={ubahRute}
+                />
+                <p>Rute: {rute}</p>
 
-            <button onClick={buatShipment}>
-                Buat Shipment
-            </button>
+                <button onClick={buatShipment}>
+                    Buat Shipment
+                </button>
 
-            <p>{message}</p>
+                <p>{message}</p>
+            </div>
         </div>
 
     )
