@@ -24,7 +24,7 @@ function App() {
     })
   }
 
-  function getFirstDriver() {
+  async function getFirstDriver() {
     fetch('http://127.0.0.1:8000/driver/first')
     .then(request => request.json())
     .then(data => {
@@ -42,7 +42,7 @@ function App() {
     })
   }
 
-  function getDrivers() {
+  async function getDrivers() {
         fetch('http://127.0.0.1:8000/drivers')
     .then(response => response.json())
     .then(data => {
@@ -88,6 +88,7 @@ function App() {
         <Drivers
         drivers={drivers}
         getDrivers={getDrivers}
+        getFirstDriver={getFirstDriver}
         />
       )}
 

@@ -15,7 +15,10 @@ def get_drivers(connection):
     query = """
         SELECT *
         FROM driver
-        ORDER BY urutan;
+        ORDER BY
+            urutan ASC NULLS LAST,
+            urutan_sebelumnya ASC NULLS LAST,
+            status_driver ASC;
     """
     with connection.cursor(row_factory=dict_row) as cursor:
         cursor.execute(query)
@@ -105,6 +108,7 @@ def create_pengiriman(
 
     return id_pengiriman
 
+# update status driver
 def update_status_driver(connection, id_driver, status):
     cursor = connection.cursor()
 

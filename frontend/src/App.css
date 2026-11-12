@@ -152,3 +152,253 @@
   padding: 20px;
 }
 
+
+/* DRIVER LIST */
+
+.driver-list {
+    margin-top: 28px;
+    padding: 24px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+}
+
+.driver-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.driver-list-header h2 {
+    margin: 0 0 6px;
+    color: #172b4d;
+    font-size: 22px;
+}
+
+.driver-list-header p {
+    margin: 0;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.driver-count {
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.driver-table {
+    width: 100%;
+}
+
+.driver-row {
+    display: grid;
+    grid-template-columns: 90px minmax(120px, 1fr) 150px 80px;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 12px;
+    border-bottom: 1px solid #edf0f4;
+}
+
+.driver-row:last-child {
+    border-bottom: none;
+}
+
+.driver-table-header {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    color: #64748b;
+    background: #f8fafc;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.driver-order {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    min-height: 38px;
+    border-radius: 10px;
+    background: #f1f5f9;
+    color: #334155;
+    font-weight: 700;
+}
+
+.driver-name {
+    color: #172b4d;
+    font-weight: 600;
+}
+
+.driver-status {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.status-siap {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status-luar-kota {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.status-izin,
+.status-tidak-masuk {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.driver-edit-button {
+    padding: 8px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #334155;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.driver-edit-button:hover {
+    background: #eff6ff;
+    border-color: #93c5fd;
+}
+
+@media (max-width: 640px) {
+    .driver-list {
+        padding: 14px;
+    }
+
+    .driver-row {
+        grid-template-columns: 42px minmax(90px, 1fr) auto;
+        gap: 10px;
+        padding: 14px 6px;
+    }
+
+    .driver-table-header span:nth-child(3),
+    .driver-table-header span:nth-child(4) {
+        display: none;
+    }
+
+    .driver-row > div:nth-child(3) {
+        grid-column: 2;
+    }
+
+    .driver-row > div:nth-child(4) {
+        grid-column: 3;
+        grid-row: 1 / span 2;
+    }
+
+    .driver-list-header h2 {
+        font-size: 19px;
+    }
+}
+
+
+/* formulir edit driver */
+
+.edit-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background: rgba(15, 23, 42, 0.55);
+}
+
+.edit-modal {
+    width: 100%;
+    max-width: 480px;
+    padding: 24px;
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    color: #1e293b;
+}
+
+.edit-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+}
+
+.edit-modal-header h2 {
+    margin: 0 0 6px;
+}
+
+.edit-modal-header p {
+    margin: 0;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.edit-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 18px;
+}
+
+.edit-form-group label {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.edit-form-group input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 11px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font: inherit;
+}
+
+.edit-form-group input:focus {
+    outline: 2px solid #93c5fd;
+    border-color: #3b82f6;
+}
+
+.edit-form-group small {
+    color: #64748b;
+    font-size: 12px;
+}
+
+.edit-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 24px;
+}
+
+.edit-form-actions button {
+    padding: 10px 16px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.edit-form-actions button[type="submit"] {
+    color: white;
+    background: #2563eb;
+    border-color: #2563eb;
+}

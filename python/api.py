@@ -14,7 +14,8 @@ from driver import (
     add_driver,
     edit_urutan,
     update_driver_status_out,
-    update_driver_status_in
+    update_driver_status_in,
+    edit_driver
 )
 
 app = FastAPI()
@@ -229,6 +230,30 @@ def edit_status_driver_in(request: EditStatusDriverIn):
 
         return{
             "message": "Driver status updated successfully"
+        }
+
+    finally:
+        connection.close()
+
+# api edit driver (menerima permintaan dari user berupa dict yang berubah)
+class EditDriverRequest(BaseModel):
+    id_driver: int
+    perubahan: dict
+
+@app.post("/edit_driver")
+def edit_drivers(data: EditDriverRequest):
+
+    connection = connect_db()
+
+    try:
+        edit_driver(
+            connection,
+            data.id_driver,
+            data.perubahan
+        )
+
+        return{
+            "message": "Driver updated successfully"
         }
 
     finally:
