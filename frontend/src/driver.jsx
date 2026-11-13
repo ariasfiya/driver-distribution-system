@@ -133,6 +133,16 @@ function EditDriver({
     const [statusDraft, setStatusDraft] = useState("")
     const [aktifDraft, setAktifDraft] = useState(false)
 
+    // menentukan tampilan form edit driver apa yang di sembunyikan dan saat kondisi seperti apa
+    const driverLuarKota = selectedDriver?.status_driver === "LUAR_KOTA"
+    const driverAktif = selectedDriver?.aktif
+    const drafSiap = statusDraft === "SIAP"
+
+    const bolehEditStatus = aktifDraft && !driverLuarKota && driverAktif
+    const bolehEditUrutan = aktifDraft && !driverLuarKota && driverAktif && drafSiap
+
+    const bolehEditAktif = !driverLuarKota
+
     useEffect(() => {
     if (!selectedDriver) {
         setUrutanDraft("")
@@ -169,9 +179,9 @@ function EditDriver({
     // misal nama berubah maka adaPerubahan bernilai true
     const adaPerubahan =
         namaBerubah ||
-        urutanBerubah ||
-        statusBerubah ||
-        aktifBerubah
+        (bolehEditUrutan && urutanBerubah) ||
+        (bolehEditStatus && statusBerubah) ||
+        (bolehEditAktif && aktifBerubah)
 
     const perubahan = {}
 
@@ -181,7 +191,7 @@ function EditDriver({
     }
 
     // 2. Perubahan status aktif
-    if (aktifBerubah) {
+    if (bolehEditAktif && aktifBerubah) {
         perubahan.aktif = aktifDraft
     }
 
@@ -189,15 +199,14 @@ function EditDriver({
     // Hanya dikirim jika status aktif tidak berubah
     // dan driver tetap aktif.
     else if (aktifDraft) {
-        if (urutanBerubah && urutanDraft !== "") {
+        if (bolehEditUrutan && urutanBerubah && urutanDraft !== "") {
             perubahan.urutan = Number(urutanDraft)
         }
 
-        if (statusBerubah) {
+        if (bolehEditStatus && statusBerubah) {
             perubahan.status_driver = statusDraft
         }
     }
-
 
     async function handleSave(event) {
         event.preventDefault()
@@ -271,42 +280,48 @@ function EditDriver({
                                     onChange={(event) => setNamaDriver(event.target.value)}
                                 />
                             </div>
+                            
+                            {bolehEditUrutan && (
+                                <div className="edit-form-group">
+                                    <label htmlFor="urutan-driver">Urutan Antrean</label>
+                                    <input
+                                        id="urutan-driver"
+                                        type="number"
+                                        value={urutanDraft}
+                                        onChange={(event) => setUrutanDraft(event.target.value)}
+                                    />
+                                    <small>Pengaturan urutan dilakukan melalui operasi antrean.</small>
+                                </div>
+                            )}
 
-                            <div className="edit-form-group">
-                                <label htmlFor="urutan-driver">Urutan Antrean</label>
-                                <input
-                                    id="urutan-driver"
-                                    type="number"
-                                    value={urutanDraft}
-                                    onChange={(event) => setUrutanDraft(event.target.value)}
-                                />
-                                <small>Pengaturan urutan dilakukan melalui operasi antrean.</small>
-                            </div>
+                            {bolehEditStatus && (
+                                <div className="edit-form-group">
+                                    <label htmlFor="status-driver">Status Driver</label>
+                                    <select
+                                        id="status-driver"
+                                        value={statusDraft}
+                                        onChange={(event) => setStatusDraft(event.target.value)}
+                                    >
+                                        <option value="SIAP">SIAP</option>
+                                        <option value="IZIN">IZIN</option>
+                                        <option value="SAKIT">SAKIT</option>
+                                        <option value="BERTUGAS">BERTUGAS</option>
+                                    </select>
+                                    <small>Perubahan status mengikuti aturan antrean.</small>
+                                </div>
+                            )}
 
-                            <div className="edit-form-group">
-                                <label htmlFor="status-driver">Status Driver</label>
-                                <select
-                                    id="status-driver"
-                                    value={statusDraft}
-                                    onChange={(event) => setStatusDraft(event.target.value)}
-                                >
-                                    <option value="SIAP">SIAP</option>
-                                    <option value="IZIN">IZIN</option>
-                                    <option value="SAKIT">SAKIT</option>
-                                    <option value="BERTUGAS">BERTUGAS</option>
-                                </select>
-                                <small>Perubahan status mengikuti aturan antrean.</small>
-                            </div>
-
-                            <div className="edit-form-group">
-                                <label htmlFor="aktif-driver">Driver Aktif</label>
-                                <input
-                                    id="aktif-driver"
-                                    type="checkbox"
-                                    checked={aktifDraft}
-                                    onChange={(event) => setAktifDraft(event.target.checked)}
-                                />
-                            </div>
+                            {bolehEditAktif && (
+                                <div className="edit-form-group">
+                                    <label htmlFor="aktif-driver">Driver Aktif</label>
+                                    <input
+                                        id="aktif-driver"
+                                        type="checkbox"
+                                        checked={aktifDraft}
+                                        onChange={(event) => setAktifDraft(event.target.checked)}
+                                    />
+                                </div>
+                            )}
 
                             <div className="edit-form-actions">
                                 <button
